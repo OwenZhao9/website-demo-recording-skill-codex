@@ -134,7 +134,7 @@ if (!baseUrl) {
   throw new Error('Config must include "url".');
 }
 
-const output = path.resolve(cwd, config.output || 'recordings/website-demo.mp4');
+const output = path.resolve(cwd, config.output || 'recordings/website-recording.mp4');
 const outputDir = path.dirname(output);
 const rawWebm = output.replace(/\.mp4$/i, '.raw.webm');
 const viewport = {

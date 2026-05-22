@@ -41,7 +41,7 @@ Use a JSON file. Minimal example:
 ```json
 {
   "url": "http://127.0.0.1:5174",
-  "output": "recordings/demo.mp4",
+  "output": "recordings/website-recording.mp4",
   "viewport": { "width": 1440, "height": 920 },
   "restoreFiles": ["data/submissions.json"],
   "actions": [
@@ -104,14 +104,14 @@ After generating the video:
 ffprobe -v error -select_streams v:0 \
   -show_entries stream=width,height,codec_name \
   -show_entries format=duration,size \
-  -of default=noprint_wrappers=1:nokey=0 recordings/demo.mp4
+  -of default=noprint_wrappers=1:nokey=0 recordings/website-recording.mp4
 ```
 
 Spot-check early and interaction-heavy moments:
 
 ```bash
 mkdir -p recordings/check-frames
-ffmpeg -y -ss 6 -i recordings/demo.mp4 -frames:v 1 recordings/check-frames/frame-006.png
+ffmpeg -y -ss 6 -i recordings/website-recording.mp4 -frames:v 1 recordings/check-frames/frame-006.png
 ```
 
 Inspect that:
