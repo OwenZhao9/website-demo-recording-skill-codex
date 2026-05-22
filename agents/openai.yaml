@@ -1,0 +1,4 @@
+interface:
+  display_name: "Record Website Demo"
+  short_description: "Record polished website demo videos."
+  default_prompt: "Record a slow, realistic demo video of this website showing the main user flows with visible cursor, click indicators, and MP4 output."
