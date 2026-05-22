@@ -1,4 +1,4 @@
-# record-website-demo
+# 网站演示录屏skill-codex
 
 Codex skill for generating polished website demo videos with Playwright and ffmpeg.
 
@@ -20,7 +20,7 @@ Clone this repository into your Codex skills directory:
 
 ```bash
 mkdir -p ~/.codex/skills
-git clone https://github.com/OwenZhao9/record-website-demo.git ~/.codex/skills/record-website-demo
+git clone https://github.com/OwenZhao9/website-demo-recording-skill-codex.git ~/.codex/skills/record-website-demo
 ```
 
 Restart Codex or start a new conversation so the skill list refreshes.
