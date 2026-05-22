@@ -91,8 +91,9 @@ Target forms:
 - Keep a readable pace: 1-2 seconds after navigation, 500-900 ms after simple clicks, longer after form submissions.
 - For forms that write demo data, add those files to `restoreFiles`.
 - If the app has an existing data store, snapshot and restore it rather than leaving demo submissions.
+- The script automatically searches for Playwright in the target project, this skill, parent `node_modules`, npm global root, and `~/.npm/_npx` caches.
+- If automatic Playwright discovery fails, run `npm install -D playwright` in the target project or set `PLAYWRIGHT_REQUIRE_ROOT` to a directory whose `node_modules` contains `playwright`.
 - If Playwright browsers are not installed, the script will try common macOS Chrome/Edge paths first.
-- If the target project cannot import Playwright, run `npm install -D playwright` in that project.
 - If `ffmpeg` is missing, install it or keep the raw WebM from Playwright.
 
 ## Validation Checklist

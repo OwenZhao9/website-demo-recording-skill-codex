@@ -27,13 +27,25 @@ Restart Codex or start a new conversation so the skill list refreshes.
 
 ## Requirements
 
-The target project should have Playwright available:
+The script automatically searches for Playwright in:
+
+- the target project
+- this skill directory
+- parent `node_modules` folders
+- npm global root
+- `~/.npm/_npx` caches, including Codex/Playwright MCP installs
+
+If automatic discovery fails, install Playwright in the target project:
 
 ```bash
 npm install -D playwright
 ```
 
-The script first tries to load Playwright from the target project. If that fails, it tries to load Playwright from the skill directory.
+Or point the script at an existing install:
+
+```bash
+PLAYWRIGHT_REQUIRE_ROOT=/path/to/project node ~/.codex/skills/record-website-demo/scripts/record_website_demo.mjs --config .demo-recording/demo.json
+```
 
 You also need `ffmpeg` for MP4 conversion:
 

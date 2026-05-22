@@ -4,15 +4,19 @@ import { createRequire } from 'node:module';
 import {
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   rmSync,
   renameSync,
+  statSync,
   writeFileSync
 } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const cwd = process.cwd();
-const requireFromCwd = createRequire(path.join(cwd, 'package.json'));
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const skillRoot = path.resolve(scriptDir, '..');
 
 function usage() {
   console.error('Usage: node record_website_demo.mjs --config path/to/demo.json');
@@ -28,13 +32,93 @@ function parseArgs(argv) {
   return args;
 }
 
-function loadPlaywright() {
-  try {
-    return requireFromCwd('playwright');
-  } catch {
-    const requireHere = createRequire(import.meta.url);
-    return requireHere('playwright');
+function unique(items) {
+  return [...new Set(items.filter(Boolean))];
+}
+
+function ancestorDirs(startDir) {
+  const dirs = [];
+  let current = path.resolve(startDir);
+  while (true) {
+    dirs.push(current);
+    const parent = path.dirname(current);
+    if (parent === current) return dirs;
+    current = parent;
   }
+}
+
+function runText(command, args) {
+  try {
+    return execFileSync(command, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return '';
+  }
+}
+
+function npxPlaywrightRoots() {
+  const root = path.join(process.env.HOME || '', '.npm', '_npx');
+  if (!existsSync(root)) return [];
+
+  return readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(root, entry.name))
+    .filter((dir) => existsSync(path.join(dir, 'node_modules', 'playwright', 'package.json')))
+    .sort((a, b) => {
+      const aTime = statSync(path.join(a, 'node_modules', 'playwright', 'package.json')).mtimeMs;
+      const bTime = statSync(path.join(b, 'node_modules', 'playwright', 'package.json')).mtimeMs;
+      return bTime - aTime;
+    });
+}
+
+function candidateRequireRoots() {
+  const envRoots = [
+    process.env.PLAYWRIGHT_REQUIRE_ROOT,
+    process.env.PLAYWRIGHT_NODE_PATH,
+    process.env.PLAYWRIGHT_NODE_MODULES
+  ];
+  const globalRoot = runText('npm', ['root', '-g']);
+  const globalProjectRoot = globalRoot ? path.dirname(globalRoot) : '';
+
+  return unique([
+    ...envRoots,
+    cwd,
+    skillRoot,
+    ...ancestorDirs(cwd),
+    ...ancestorDirs(skillRoot),
+    globalProjectRoot,
+    ...npxPlaywrightRoots()
+  ]);
+}
+
+function tryLoadPlaywrightFrom(root) {
+  try {
+    const requireFromRoot = createRequire(path.join(root, 'package.json'));
+    const playwright = requireFromRoot('playwright');
+    return { playwright, root };
+  } catch {
+    return null;
+  }
+}
+
+function loadPlaywright() {
+  for (const root of candidateRequireRoots()) {
+    const loaded = tryLoadPlaywrightFrom(root);
+    if (loaded) {
+      if (process.env.RECORD_WEBSITE_DEMO_DEBUG) {
+        console.error(`Loaded Playwright from ${loaded.root}`);
+      }
+      return loaded.playwright;
+    }
+  }
+
+  throw new Error(
+    [
+      'Unable to find an installed Playwright package.',
+      'Tried the target project, this skill, parent node_modules folders, npm global root, and ~/.npm/_npx caches.',
+      'Install Playwright in the target project with: npm install -D playwright',
+      'Or set PLAYWRIGHT_REQUIRE_ROOT to a directory whose node_modules contains playwright.'
+    ].join('\n')
+  );
 }
 
 const args = parseArgs(process.argv);
@@ -193,8 +277,16 @@ async function installDemoOverlay(page) {
   });
 }
 
+async function ensureDemoOverlay(page) {
+  const hasOverlay = await page.evaluate(() => Boolean(window.__demoOverlay?.cursor?.isConnected));
+  if (!hasOverlay) {
+    await installDemoOverlay(page);
+  }
+}
+
 async function showCaption(page, text) {
   if (!text) return;
+  await ensureDemoOverlay(page);
   await page.evaluate((caption) => {
     let node = document.querySelector('[data-demo-caption]');
     if (!node) {
@@ -236,10 +328,12 @@ function targetLocator(page, target) {
 }
 
 async function hideHighlight(page) {
+  await ensureDemoOverlay(page);
   await page.evaluate(() => window.__demoOverlay?.clear());
 }
 
 async function moveCursorTo(page, locator) {
+  await ensureDemoOverlay(page);
   await locator.scrollIntoViewIfNeeded();
   await delay(350);
   const rect = await locator.evaluate((element) => {
@@ -255,6 +349,7 @@ async function moveCursorTo(page, locator) {
 }
 
 async function trackHighlight(page, locator) {
+  await ensureDemoOverlay(page);
   await locator.evaluate((element) => window.__demoOverlay.track(element));
 }
 
